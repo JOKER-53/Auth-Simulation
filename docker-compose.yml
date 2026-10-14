@@ -1,0 +1,11 @@
+services:
+  auth-simulation:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=dev-docker-secret-key-2026
+      - SIMULATION_MODE=vulnerable
+      - TOKEN_TTL_SECONDS=180
+      - FLASK_DEBUG=False
+    restart: unless-stopped

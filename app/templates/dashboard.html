@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard - OAuth Simulation{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2>Welcome, {{ user.name }}</h2>
+      <div style="color: var(--text-secondary); font-size: 0.9rem;">
+        Authenticated as <code>{{ user.email }}</code> (Google UID: <code>{{ user.google_id }}</code>)
+      </div>
+    </div>
+    <span class="mode-badge mode-{{ mode }}">Defense Mode: {{ mode }}</span>
+  </div>
+
+  <div class="alert alert-success">
+    <span>&#x2714;</span>
+    <div>
+      <strong>OAuth Token Issued Successfully!</strong> You are now authorized to access protected resources.
+    </div>
+  </div>
+
+  <div class="card" style="background: var(--bg-surface); border-color: var(--border-color); margin-bottom: 1.5rem;">
+    <h3 style="margin-bottom: 0.75rem; font-size: 1.1rem; color: var(--accent-blue);">
+      &#x1F511; Your Active Bearer Token
+    </h3>
+    <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem;">
+      <span id="userToken" class="token-badge" style="font-size: 0.95rem; flex: 1;">{{ user.token }}</span>
+      <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('userToken', 'copyFeedback')">
+        <span id="copyFeedback">Copy Token</span>
+      </button>
+    </div>
+
+    <div style="font-size: 0.85rem; color: var(--text-secondary); display: flex; gap: 1.5rem; flex-wrap: wrap;">
+      <span><strong>Nonce:</strong> {{ user.nonce }}</span>
+      <span><strong>Usage Count:</strong> {{ token_record.used_count if token_record else 0 }}</span>
+      <span><strong>Status:</strong> {% if token_record and token_record.is_revoked %}<span style="color: var(--danger-red);">Revoked</span>{% else %}<span style="color: var(--success-green);">Active</span>{% endif %}</span>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom: 1rem; font-size: 1.15rem;">Next Steps</h3>
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <a href="{{ url_for('main.access', token=user.token) }}" class="btn btn-primary">
+      &#x1F513; Access Protected Resource (/access)
+    </a>
+    <a href="{{ url_for('main.replay') }}" class="btn btn-danger">
+      &#x1F47E; Simulate Intercept &amp; Replay Attack
+    </a>
+    <a href="{{ url_for('main.logout') }}" class="btn btn-secondary">
+      Sign Out
+    </a>
+  </div>
+</div>
+{% endblock %}

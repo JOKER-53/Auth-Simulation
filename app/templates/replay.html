@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Attacker Console - Replay Attack Simulator{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 style="color: #f87171;">&#x1F47E; Adversary Replay Attack Simulator</h2>
+      <div style="font-size: 0.9rem; color: var(--text-secondary);">
+        Simulate an attacker who intercepted an OAuth token and attempts to replay it to hijack the victim's session.
+      </div>
+    </div>
+    <span class="mode-badge mode-{{ mode }}">Active Mode: {{ mode }}</span>
+  </div>
+
+  <form method="post" action="{{ url_for('main.replay') }}" style="margin-bottom: 2rem;">
+    <div class="form-group">
+      <label class="form-label" for="tokenInput">Intercepted Bearer Token:</label>
+      <input type="text" id="tokenInput" name="token" class="form-control form-mono" placeholder="Paste intercepted token UUID here..." required value="{{ result.token if result else sample_token }}">
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+        Tip: Generate a token by logging in at <a href="{{ url_for('main.login') }}">/login</a> or pick one from the <a href="{{ url_for('main.admin_tokens') }}">Token Inspector</a>.
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="attackerIp">Simulated Attacker IP Address:</label>
+      <input type="text" id="attackerIp" name="attacker_ip" class="form-control form-mono" value="{{ result.attacker_ip if result else '198.51.100.77' }}" required>
+    </div>
+
+    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+      <button type="submit" class="btn btn-danger">
+        &#x26A1; Execute Replay Attack Against /access
+      </button>
+      <a href="{{ url_for('main.admin_tokens') }}" class="btn btn-secondary">
+        Inspect Token Registry
+      </a>
+    </div>
+  </form>
+
+  {% if result %}
+    <div class="card" style="background: var(--bg-surface); border-color: {% if result.is_valid %}rgba(239, 68, 68, 0.4){% else %}rgba(16, 185, 129, 0.4){% endif %};">
+      <div class="card-header" style="border-bottom: 1px solid var(--border-color);">
+        <h3 style="font-size: 1.15rem; color: {% if result.is_valid %}var(--danger-red){% else %}var(--success-green){% endif %};">
+          {% if result.is_valid %}
+            &#x26A0; REPLAY ATTACK SUCCEEDED (Vulnerability Exploited)
+          {% else %}
+            &#x1F6E1; REPLAY ATTACK BLOCKED (Mitigation Enforced)
+          {% endif %}
+        </h3>
+        <span class="mode-badge mode-{{ result.mode }}">Evaluated under: {{ result.mode }}</span>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <p style="font-size: 1rem; margin-bottom: 0.5rem;">
+          <strong>Server Verdict:</strong> <code>{{ result.message }}</code>
+        </p>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">
+          Request originating from simulated attacker host: <code>{{ result.attacker_ip }}</code>
+        </p>
+      </div>
+
+      {% if result.is_valid and result.user %}
+        <div class="alert alert-error" style="margin-bottom: 1rem;">
+          <span>&#x2620;</span>
+          <div>
+            <strong>DATA EXFILTRATED!</strong> The attacker successfully bypassed authentication and accessed the victim's private records without credentials.
+          </div>
+        </div>
+
+        <table style="width: 100%; background: var(--bg-card); border-radius: 8px;">
+          <tr><td style="color: var(--text-secondary); width: 35%;">Compromised Identity</td><td><strong>{{ result.user.name }}</strong> ({{ result.user.email }})</td></tr>
+          <tr><td style="color: var(--text-secondary);">Exfiltrated GPA</td><td><strong style="color: var(--warning-amber);">{{ result.user.gpa }}</strong></td></tr>
+          <tr><td style="color: var(--text-secondary);">Department</td><td>{{ result.user.department }}</td></tr>
+          <tr><td style="color: var(--text-secondary);">Academic Status</td><td>{{ result.user.academic_status }}</td></tr>
+          <tr><td style="color: var(--text-secondary);">Total Replays Allowed</td><td><span class="token-badge">{{ result.token_record.used_count if result.token_record else 1 }} time(s)</span></td></tr>
+        </table>
+      {% else %}
+        <div class="alert alert-success" style="margin-bottom: 1rem;">
+          <span>&#x2714;</span>
+          <div>
+            <strong>PROTECTION VERIFIED!</strong> The university access gate recognized the replayed or invalid token and refused unauthorized access.
+          </div>
+        </div>
+      {% endif %}
+
+      <div style="margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+        <strong>Demonstration Tip:</strong> Switch between <strong>vulnerable</strong> and <strong>secure</strong> modes to test the difference in system resilience.
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

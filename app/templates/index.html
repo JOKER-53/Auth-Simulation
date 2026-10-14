@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}OAuth Token Replay Attack Simulation - Home{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <h1>OAuth Token Replay Attack Simulation</h1>
+  <p>
+    An interactive security simulation demonstrating how unvalidated, reusable bearer tokens allow attackers to hijack sessions, and how modern OAuth defenses mitigate token replay.
+  </p>
+  <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+    <a href="{{ url_for('main.login') }}" class="btn btn-primary">&#x1F511; Start Legitimate User Flow</a>
+    <a href="{{ url_for('main.replay') }}" class="btn btn-danger">&#x1F47E; Launch Replay Attack</a>
+    <a href="{{ url_for('main.admin_tokens') }}" class="btn btn-secondary">&#x1F4CA; Token Store &amp; Audit Log</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2>Current Defense Status</h2>
+    <span class="mode-badge mode-{{ mode }}">Active Mode: {{ mode }}</span>
+  </div>
+  <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+    {% if mode == 'vulnerable' %}
+      <strong style="color: var(--danger-red);">&#x26A0; VULNERABLE MODE ACTIVE:</strong> Tokens lack single-use enforcement, have no device binding, and can be intercepted and replayed multiple times without restriction.
+    {% else %}
+      <strong style="color: var(--success-green);">&#x2714; SECURE MODE ACTIVE:</strong> Tokens are strictly single-use authorization grants (RFC 6749 &sect;4.1.2), bound to client identity, and any token reuse immediately triggers automatic credential revocation.
+    {% endif %}
+  </p>
+  <form action="{{ url_for('main.toggle_mode') }}" method="post">
+    <button type="submit" class="btn btn-secondary btn-sm">
+      Switch to {% if mode == 'vulnerable' %}Secure Mode{% else %}Vulnerable Mode{% endif %}
+    </button>
+  </form>
+</div>
+
+<div class="grid-3">
+  <div class="card">
+    <h3 style="color: var(--accent-blue); margin-bottom: 0.75rem;">1. Legitimate Login</h3>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+      A student signs in via a simulated Google OAuth provider. The backend issues a bearer token associated with their identity.
+    </p>
+    <a href="{{ url_for('main.login') }}" class="btn btn-secondary btn-sm">Simulate Login &rarr;</a>
+  </div>
+
+  <div class="card">
+    <h3 style="color: var(--warning-amber); margin-bottom: 0.75rem;">2. Token Interception</h3>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+      In an insecure network (public Wi-Fi, proxy logs, browser cache), an adversary sniffs or extracts the valid authorization token.
+    </p>
+    <a href="{{ url_for('main.admin_tokens') }}" class="btn btn-secondary btn-sm">Inspect Tokens &rarr;</a>
+  </div>
+
+  <div class="card">
+    <h3 style="color: var(--danger-red); margin-bottom: 0.75rem;">3. Token Replay</h3>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+      The adversary replays the intercepted token against <code>/access</code> from a different IP/client to gain unauthorized access.
+    </p>
+    <a href="{{ url_for('main.replay') }}" class="btn btn-secondary btn-sm">Run Attack &rarr;</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Attack &amp; Defense Sequence Flow</h3>
+  </div>
+  <pre class="token-badge" style="display: block; padding: 1.25rem; font-size: 0.85rem; line-height: 1.7; background: #0b0f19;">
++-------------------+           +-----------------------+           +----------------------+
+|  Legitimate User  |           | University Auth Server|           |  Adversary / Replay  |
++-------------------+           +-----------------------+           +----------------------+
+          |                                 |                                  |
+          |--- 1. OAuth Sign-In ----------->|                                  |
+          |<-- 2. Bearer Token Issued ------|                                  |
+          |                                 |                                  |
+          |--- 3. /access?token=XYZ ------->|                                  |
+          |<-- 4. Authorized Profile -------|                                  |
+          |                                 |                                  |
+          |       [ Token Intercepted by Man-in-the-Middle or Shared Device ]  |
+          |                                 |                                  |
+          |                                 |<-- 5. Replay: /access?token=XYZ -|
+          |                                 |                                  |
+          |   (VULNERABLE MODE)             |--- 6a. 200 OK (Data Leaked!) --->|
+          |                                 |                                  |
+          |   (SECURE DEFENSE MODE)         |--- 6b. 403 Forbidden (Blocked) ->|
+          |                                 |    (Token Compromise Revoked!)   |
+  </pre>
+</div>
+{% endblock %}

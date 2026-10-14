@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Simulated Google OAuth Login{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header" style="justify-content: center; text-align: center; flex-direction: column; gap: 0.5rem;">
+      <span style="font-size: 2rem;">&#x1F510;</span>
+      <h2>Simulated Google Sign-In</h2>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">
+        Authenticate with a simulated Google account to receive an OAuth bearer token.
+      </p>
+    </div>
+
+    {% if error %}
+      <div class="alert alert-error">
+        <span>&#x26A0;</span>
+        <span>{{ error }}</span>
+      </div>
+    {% endif %}
+
+    <div style="margin-bottom: 1.5rem;">
+      <label class="form-label">Quick Select Demo Account:</label>
+      {% for u in users %}
+        <div class="user-select-card" onclick="selectEmail('{{ u.email }}')">
+          <div>
+            <strong>{{ u.name }}</strong>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">{{ u.email }} &bull; {{ u.role }}</div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm">Use</button>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="{{ url_for('main.login') }}">
+      <div class="form-group">
+        <label class="form-label" for="emailInput">Or enter authorized email address:</label>
+        <input type="email" id="emailInput" name="email" class="form-control" placeholder="student1@gmail.com" required value="student1@gmail.com">
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%;">
+        Sign In &amp; Issue OAuth Token &rarr;
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

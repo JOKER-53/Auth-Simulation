@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Token Inspector &amp; Security Audit Trail{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2>Token Registry &amp; Audit Trail</h2>
+      <div style="font-size: 0.9rem; color: var(--text-secondary);">
+        Real-time inspection of active OAuth grants and authentication access logs.
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <span class="mode-badge mode-{{ mode }}">Defense Mode: {{ mode }}</span>
+      <form action="{{ url_for('main.toggle_mode') }}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn-secondary btn-sm">Toggle Mode</button>
+      </form>
+      <form action="{{ url_for('main.reset_simulation') }}" method="post" style="display:inline;" onsubmit="return confirm('Reset all active tokens and audit history?');">
+        <button type="submit" class="btn btn-danger btn-sm">&#x1F5D1; Reset Engine</button>
+      </form>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom: 1rem; color: var(--accent-blue);">Active Token Registry</h3>
+  {% if tokens %}
+    <div class="table-responsive" style="margin-bottom: 2rem;">
+      <table>
+        <thead>
+          <tr>
+            <th>Token ID (UUID)</th>
+            <th>Authorized Account</th>
+            <th>Nonce</th>
+            <th>Uses</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tokens %}
+            <tr>
+              <td>
+                <span id="tok-{{ loop.index }}" class="token-badge">{{ t.token_id }}</span>
+                <button class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.4rem; font-size: 0.75rem;" onclick="copyToClipboard('tok-{{ loop.index }}', 'btn-{{ loop.index }}')">
+                  <span id="btn-{{ loop.index }}">Copy</span>
+                </button>
+              </td>
+              <td>{{ t.email }}</td>
+              <td><code>{{ t.nonce }}</code></td>
+              <td><strong>{{ t.used_count }}</strong></td>
+              <td>
+                {% if t.is_revoked %}
+                  <span style="color: var(--danger-red); font-weight: 600;">Revoked</span>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">{{ t.revocation_reason }}</div>
+                {% else %}
+                  <span style="color: var(--success-green); font-weight: 600;">Active</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if not t.is_revoked %}
+                  <form action="{{ url_for('main.revoke_token', token_str=t.token_id) }}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                      Revoke
+                    </button>
+                  </form>
+                {% else %}
+                  <span style="color: var(--text-muted); font-size: 0.8rem;">None</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">No active tokens in registry. Sign in via <a href="{{ url_for('main.login') }}">OAuth Login</a> to generate one.</p>
+  {% endif %}
+
+  <h3 style="margin-bottom: 1rem; color: var(--accent-cyan);">Security Audit Trail</h3>
+  {% if audit_logs %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp (UTC)</th>
+            <th>Client IP</th>
+            <th>Token ID</th>
+            <th>Event</th>
+            <th>Result &amp; Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in audit_logs %}
+            <tr>
+              <td style="color: var(--text-muted); font-size: 0.8rem;">{{ log.timestamp }}</td>
+              <td><code>{{ log.client_ip }}</code></td>
+              <td><span class="token-badge" style="font-size: 0.75rem;">{{ log.token_id_short }}</span></td>
+              <td>
+                <span class="mode-badge {% if log.status == 'BLOCKED' %}mode-vulnerable{% elif log.status == 'WARNING' %}mode-vulnerable{% else %}mode-secure{% endif %}" style="font-size: 0.75rem;">
+                  {{ log.event_type }}
+                </span>
+              </td>
+              <td>{{ log.message }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted);">No audit events recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

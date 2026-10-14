@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Protected Student Resource - Access Gate{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2>University Protected Resource</h2>
+      <div style="font-size: 0.9rem; color: var(--text-secondary);">
+        Endpoint: <code>/access</code> &bull; Resource: Confidential Academic &amp; Student Profile
+      </div>
+    </div>
+    <span class="mode-badge mode-{{ mode }}">Mode: {{ mode }}</span>
+  </div>
+
+  {% if is_valid and user %}
+    {% if token_record and token_record.used_count > 1 %}
+      <div class="alert alert-warning">
+        <span>&#x26A0;</span>
+        <div>
+          <strong>{{ message }}</strong><br>
+          <span style="font-size: 0.85rem;">Notice: This token has been used <strong>{{ token_record.used_count }}</strong> times. In vulnerable mode, no replay protection is enforced!</span>
+        </div>
+      </div>
+    {% else %}
+      <div class="alert alert-success">
+        <span>&#x2714;</span>
+        <div>
+          <strong>{{ message }}</strong><br>
+          <span style="font-size: 0.85rem;">Token validated successfully. Authorized academic credentials verified.</span>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="grid-2" style="margin-bottom: 2rem;">
+      <div class="card" style="background: var(--bg-surface); margin-bottom: 0;">
+        <h3 style="color: var(--accent-blue); margin-bottom: 1rem;">&#x1F393; Student Identity Record</h3>
+        <table style="width: 100%;">
+          <tr><td style="color: var(--text-secondary); width: 40%;">Full Name</td><td><strong>{{ user.name }}</strong></td></tr>
+          <tr><td style="color: var(--text-secondary);">Email</td><td><code>{{ user.email }}</code></td></tr>
+          <tr><td style="color: var(--text-secondary);">Google UID</td><td><code>{{ user.google_id }}</code></td></tr>
+          <tr><td style="color: var(--text-secondary);">Role</td><td>{{ user.role }}</td></tr>
+        </table>
+      </div>
+
+      <div class="card" style="background: var(--bg-surface); margin-bottom: 0;">
+        <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;">&#x1F4CA; Confidential Academic Data</h3>
+        <table style="width: 100%;">
+          <tr><td style="color: var(--text-secondary); width: 40%;">Department</td><td>{{ user.department }}</td></tr>
+          <tr><td style="color: var(--text-secondary);">Cumulative GPA</td><td><strong style="color: var(--success-green);">{{ user.gpa }}</strong></td></tr>
+          <tr><td style="color: var(--text-secondary);">Enrollment Status</td><td>{{ user.academic_status }}</td></tr>
+          <tr><td style="color: var(--text-secondary);">Token Status</td><td>{% if token_record.is_revoked %}<span style="color: var(--danger-red);">Revoked</span>{% else %}<span style="color: var(--success-green);">Valid</span>{% endif %}</td></tr>
+        </table>
+      </div>
+    </div>
+
+  {% else %}
+    <div class="alert alert-error">
+      <span>&#x274C;</span>
+      <div>
+        <strong style="font-size: 1.1rem;">Access Denied (403 Forbidden)</strong><br>
+        <span>{{ message }}</span>
+      </div>
+    </div>
+
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+      <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">Security Evaluation</h4>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">
+        {% if mode == 'secure' %}
+          In <strong>secure mode</strong>, tokens are single-use or bound to the authorized client. When a token reuse attempt is detected, RFC 6749 security guidance mandates that the token is immediately blocked and auto-revoked to mitigate session hijacking.
+        {% else %}
+          The token provided could not be validated. Ensure you have obtained an active token from <a href="{{ url_for('main.login') }}">login</a>.
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <a href="{{ url_for('main.replay') }}" class="btn btn-danger">&#x1F47E; Open Replay Attack Console</a>
+    <a href="{{ url_for('main.admin_tokens') }}" class="btn btn-secondary">&#x1F4CA; View Token Store &amp; Logs</a>
+    <a href="{{ url_for('main.index') }}" class="btn btn-secondary">&larr; Return Home</a>
+  </div>
+</div>
+{% endblock %}
